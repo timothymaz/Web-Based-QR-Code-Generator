@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>QR Code Generator</h1>
+        <p class="instructions">
+            Enter the text you want to convert to a QR code below, then click "Generate QR Code". The generated QR code will be displayed on your screen.
+        </p>
+        <form action="/generate" method="get">
+            <label for="data">Enter text to generate QR code:</label>
+            <input type="text" id="data" name="data" required>
+            <button type="submit">Generate QR Code</button>
+        </form>
+    </div>
+</body>
+</html>
