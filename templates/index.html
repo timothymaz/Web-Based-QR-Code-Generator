@@ -1,25 +1,190 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Generator</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 3rem;
+            text-align: center;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+            color: #343a40;
+        }
+
+        .instructions {
+            font-size: 1.125rem;
+            margin-bottom: 2rem;
+            color: #495057;
+        }
+
+        form {
+            margin-bottom: 1rem;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1.125rem;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .wifi-form {
+            display: none;
+        }
+
+        .wifi-form.active {
+            display: block;
+        }
+    </style>
 </head>
+
 <body>
     <div class="container">
         <h1>QR Code Generator</h1>
-        <p class="instructions">
-            Enter the text you want to convert to a QR code below, then click "Generate QR Code". The generated QR code will be displayed on your screen.
-        </p>
+        <p class="instructions">Enter text or select Wi-Fi to generate a QR code</p>
         <form action="/generate" method="get">
-            <label for="data">Enter text to generate QR code:</label>
-            <input type="text" id="data" name="data" required>
+            <input type="text" id="data" name="data" placeholder="Enter text here...">
             <button type="submit">Generate QR Code</button>
         </form>
+        <button id="wifiButton" onclick="toggleWifiForm()">Wi-Fi QR Code</button>
+        <form id="wifiForm" class="wifi-form">
+            <input type="text" id="ssid" name="ssid" placeholder="SSID">
+            <select name="authentication" id="authentication">
+                <option value="WPA">WPA/WPA2</option>
+                <option value="WEP">WEP</option>
+                <option value="nopass">No encryption</option>
+            </select>
+            <input type="password" id="password" name="password" placeholder="Password">
+            <button type="button" onclick="generateWifiQRCode()">Generate Wi-Fi QR Code</button>
+        </form>
+        <!-- Add this after the Wi-Fi QR Code form -->
+        <div class="form-container">
+            <h2>Contact Information (vCard)</h2>
+            <form id="contactForm" autocomplete="off">
+                <input type="text" id="name" placeholder="Name" />
+                <input type="text" id="phone" placeholder="Phone Number" />
+                <input type="text" id="email" placeholder="Email" />
+                <input type="text" id="address" placeholder="Address" />
+                <input type="text" id="website" placeholder="Website" />
+                <button type="button" onclick="generateContactQRCode()">Generate Contact QR Code</button>
+            </form>
+        </div>
+
     </div>
+    <script>
+        function toggleWifiForm() {
+            const wifiForm = document.getElementById('wifiForm');
+            wifiForm.classList.toggle('active');
+        }
+
+        async function generateWifiQRCode() {
+            const ssid = document.getElementById('ssid').value;
+            const authentication = document.getElementById('authentication').value;
+            const password = document.getElementById('password').value;
+
+            if (!ssid) {
+                alert('Please enter the SSID');
+                return;
+            }
+
+            if (authentication !== 'nopass' && !password) {
+                alert('Please enter the password');
+                return;
+            }
+
+            const wifiData = `WIFI:T:${authentication};S:${ssid};P:${password};;`;
+            const response = await fetch(`/generate?data=${encodeURIComponent(wifiData)}`);
+            const blob = await response.blob();
+
+            // Create a link to download the QR code image
+            const downloadLink = document.createElement('a');
+            downloadLink.href = URL.createObjectURL(blob);
+            downloadLink.download = 'wifi_qr_code.png';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        async function generateContactQRCode() {
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+            const address = document.getElementById('address').value;
+            const website = document.getElementById('website').value;
+
+            if (!name) {
+                alert('Please enter the name');
+                return;
+            }
+
+            let vCardData = 'BEGIN:VCARD\nVERSION:4.0\n';
+            vCardData += `FN:${name}\n`;
+            if (phone) {
+                vCardData += `TEL:${phone}\n`;
+            }
+            if (email) {
+                vCardData += `EMAIL:${email}\n`;
+            }
+            if (address) {
+                vCardData += `ADR;TYPE=HOME:;;${address};;;;\n`;
+            }
+            if (website) {
+                vCardData += `URL:${website}\n`;
+            }
+            vCardData += 'END:VCARD';
+
+            const response = await fetch(`/generate?data=${encodeURIComponent(vCardData)}`);
+            const blob = await response.blob();
+
+            // Create a link to download the QR code image
+            const downloadLink = document.createElement('a');
+            downloadLink.href = URL.createObjectURL(blob);
+            downloadLink.download = 'contact_qr_code.png';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+    </script>
 </body>
+
 </html>
